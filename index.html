@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flex Success — Extractor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#f7f6f3; --surface:#ffffff; --surface2:#f0efe9; --border:#e2e0d8;
+  --border-strong:#c8c6bc; --text:#1a1a18; --text2:#6b6a64; --text3:#9e9d97;
+  --accent:#b30200; --accent-light:#fdf0f0; --accent-mid:#d94040;
+  --high:#7c1d1d; --high-bg:#fdf2f2; --high-border:#f5c6c6;
+  --low:#1a3a6b; --low-bg:#f0f4fd; --low-border:#c6d4f5;
+  --radius:10px; --radius-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
+header{background:#000;color:white;padding:18px 32px;display:flex;align-items:center;justify-content:space-between;}
+header .logo{font-size:17px;font-weight:600;letter-spacing:-0.02em;}
+header .logo span{opacity:.5;font-weight:300;margin-left:6px;font-size:13px;}
+header .tagline{font-size:12px;opacity:.55;font-weight:300;}
+.main{max-width:1140px;margin:0 auto;padding:28px 24px;}
+
+/* Page tabs */
+.page-tabs{display:flex;gap:3px;margin-bottom:24px;background:var(--surface2);border-radius:var(--radius);padding:4px;}
+.page-tab{flex:1;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;text-align:center;}
+.page-tab:hover{background:var(--surface);color:var(--text);}
+.page-tab.active{background:var(--accent);color:white;}
+
+/* Pages */
+.page{display:none;}
+.page.active{display:block;}
+
+/* Upload */
+.upload-card{background:var(--surface);border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:36px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:24px;}
+.upload-card:hover,.upload-card.drag{border-color:var(--accent);background:var(--accent-light);}
+.upload-icon{width:44px;height:44px;background:var(--accent-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px;}
+.upload-card h2{font-size:15px;font-weight:500;margin-bottom:5px;}
+.upload-card p{font-size:13px;color:var(--text2);}
+input[type=file]{display:none;}
+
+/* Status */
+.status-bar{background:var(--accent-light);border:1px solid #f5c0c0;border-radius:var(--radius-sm);padding:11px 15px;font-size:13px;color:var(--accent);margin-bottom:18px;display:none;align-items:center;gap:10px;}
+.status-bar.error{background:var(--high-bg);border-color:var(--high-border);color:var(--high);}
+.spinner{width:15px;height:15px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.patient-meta{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 15px;font-size:13px;margin-bottom:18px;display:none;}
+.patient-meta strong{color:var(--accent);}
+
+/* Result tabs */
+.tabs-row{display:flex;gap:4px;margin-bottom:-1px;overflow-x:auto;}
+.tab-btn{padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;border:1px solid var(--border);border-bottom:none;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:var(--surface2);color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .1s;}
+.tab-btn:hover{background:var(--surface);color:var(--text);}
+.tab-btn.active{background:var(--surface);color:var(--accent);border-color:var(--border-strong);border-bottom-color:var(--surface);}
+.results-panel{background:var(--surface);border:1px solid var(--border-strong);border-radius:0 var(--radius) var(--radius) var(--radius);overflow:hidden;}
+.results-toolbar{padding:11px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--text2);align-items:center;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;}
+.legend-dot{width:7px;height:7px;border-radius:50%;}
+.copy-btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:7px 15px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:opacity .15s;display:flex;align-items:center;gap:6px;}
+.copy-btn:hover{opacity:.85;}
+.copy-btn:disabled{opacity:.45;cursor:default;}
+.results-table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{text-align:left;padding:8px 11px;font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap;font-family:'DM Sans',sans-serif;position:sticky;top:0;}
+td{padding:7px 11px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.section-row td{background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);padding:6px 11px;}
+.marker-name{color:var(--text);font-family:'DM Sans',sans-serif;}
+.unit-cell,.range-cell{color:var(--text3);}
+.val-high{display:inline-flex;align-items:center;gap:4px;background:var(--high-bg);color:var(--high);border:1px solid var(--high-border);border-radius:4px;padding:2px 6px;font-weight:500;font-family:'DM Mono',monospace;}
+.val-low{display:inline-flex;align-items:center;gap:4px;background:var(--low-bg);color:var(--low);border:1px solid var(--low-border);border-radius:4px;padding:2px 6px;font-weight:500;font-family:'DM Mono',monospace;}
+.val-ok{color:var(--text);font-family:'DM Mono',monospace;}
+.val-na{color:var(--text3);font-style:italic;font-family:'DM Sans',sans-serif;}
+footer{text-align:center;padding:28px;font-size:12px;color:var(--text3);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">FLEX SUCCESS <span>Extractor</span></div>
+  <div class="tagline">Upload any PDF · auto-translated &amp; converted · AU &amp; UK standards</div>
+</header>
+
+<div class="main">
+  <!-- Page switcher -->
+  <div class="page-tabs">
+    <button class="page-tab active" onclick="switchPage('blood')">🩸 Bloodwork</button>
+    <button class="page-tab" onclick="switchPage('echo')">❤️ Echocardiogram</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ BLOODWORK PAGE -->
+  <div id="page-blood" class="page active">
+    <div class="upload-card" id="blood-dropzone" onclick="document.getElementById('blood-file').click()">
+      <input type="file" id="blood-file" accept=".pdf" onchange="handleFile('blood',event)">
+      <div class="upload-icon">📄</div>
+      <h2 id="blood-upload-title">Upload blood test PDF</h2>
+      <p>Any language · any lab · auto-translated &amp; converted · drag and drop or click</p>
+    </div>
+    <div class="status-bar" id="blood-status"><div class="spinner" id="blood-spinner"></div><span id="blood-status-text"></span></div>
+    <div class="patient-meta" id="blood-meta"></div>
+    <div class="tabs-row">
+      <button class="tab-btn active" onclick="switchTab('blood',0)">♂ Australia</button>
+      <button class="tab-btn" onclick="switchTab('blood',1)">♀ Australia</button>
+      <button class="tab-btn" onclick="switchTab('blood',2)">♂ United Kingdom</button>
+      <button class="tab-btn" onclick="switchTab('blood',3)">♀ United Kingdom</button>
+    </div>
+    <div class="results-panel">
+      <div class="results-toolbar">
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#e24b4a"></span>Above range</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span>Below range</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#9ca3af"></span>Not tested</span>
+        </div>
+        <button class="copy-btn" id="blood-copy-btn" onclick="copyData('blood')" disabled>📋 Copy column for sheet</button>
+      </div>
+      <div class="results-table-wrap">
+        <table><thead><tr><th style="width:36%">Marker</th><th style="width:16%">Value</th><th style="width:16%">Unit</th><th style="width:32%">Reference range</th></tr></thead>
+        <tbody id="blood-table-body"><tr><td colspan="4" style="text-align:center;padding:36px;color:#9ca3af;font-family:'DM Sans',sans-serif;">Upload a PDF to see results</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ ECHO PAGE -->
+  <div id="page-echo" class="page">
+    <div class="upload-card" id="echo-dropzone" onclick="document.getElementById('echo-file').click()">
+      <input type="file" id="echo-file" accept=".pdf" onchange="handleFile('echo',event)">
+      <div class="upload-icon">🫀</div>
+      <h2 id="echo-upload-title">Upload echocardiogram report PDF</h2>
+      <p>Any lab · any format · values extracted &amp; mapped to echo tracker · drag and drop or click</p>
+    </div>
+    <div class="status-bar" id="echo-status"><div class="spinner" id="echo-spinner"></div><span id="echo-status-text"></span></div>
+    <div class="patient-meta" id="echo-meta"></div>
+    <div class="tabs-row">
+      <button class="tab-btn active" onclick="switchTab('echo',0)">♂ Echo Male</button>
+      <button class="tab-btn" onclick="switchTab('echo',1)">♀ Echo Female</button>
+    </div>
+    <div class="results-panel">
+      <div class="results-toolbar">
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#e24b4a"></span>Above range</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span>Below range</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#9ca3af"></span>Not reported</span>
+        </div>
+        <button class="copy-btn" id="echo-copy-btn" onclick="copyData('echo')" disabled>📋 Copy column for sheet</button>
+      </div>
+      <div class="results-table-wrap">
+        <table><thead><tr><th style="width:36%">Parameter</th><th style="width:16%">Value</th><th style="width:16%">Unit</th><th style="width:32%">Reference range</th></tr></thead>
+        <tbody id="echo-table-body"><tr><td colspan="4" style="text-align:center;padding:36px;color:#9ca3af;font-family:'DM Sans',sans-serif;">Upload an echo PDF to see results</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>Flex Success Extractor · For coaching use only · Not medical advice · flexsuccesscoaching.online</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── Page switching ────────────────────────────────────────────────────────────
+function switchPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+const currentTab = {blood:0, echo:0};
+function switchTab(type,i){
+  currentTab[type]=i;
+  const panel=document.getElementById('page-'+type);
+  panel.querySelectorAll('.tab-btn').forEach((b,j)=>b.classList.toggle('active',i===j));
+  if(extractedData[type]) renderTable(type);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BLOOD SECTIONS & RANGES
+// ══════════════════════════════════════════════════════════════════════════════
+const BLOOD_SECTIONS=[
+  {name:"Full Blood Count",markers:["Haemoglobin","Red Blood Cells","Haematocrit / PCV","Mean Cell Volume","Mean Cell Haemoglobin","MCHC","Red Cell Distribution Width","Platelets","Mean Platelet Volume","White Blood Cells","Neutrophils","Lymphocytes","Monocytes","Eosinophils","Basophils"]},
+  {name:"Liver Function",markers:["Albumin","Total Protein","Globulin","Total Bilirubin","ALT","ALP","GGT","LDH","AST"]},
+  {name:"Kidney & Electrolytes",markers:["Urea","Creatinine","eGFR","Uric Acid","Sodium","Potassium","Calcium","Phosphate"]},
+  {name:"Blood Glucose & Diabetes",markers:["Glucose (fasting)","Insulin","HbA1c"]},
+  {name:"Inflammation",markers:["CRP"]},
+  {name:"Iron Studies",markers:["Iron","Ferritin","Transferrin Saturation","TIBC"]},
+  {name:"Lipids",markers:["Cholesterol (Total)","HDL","LDL","Triglycerides","Non-HDL Cholesterol","LDL/HDL Ratio"]},
+  {name:"Hormones — Male",markers:["Testosterone","Free Testosterone","SHBG","Free Androgen Index","Oestradiol","FSH","LH","Prolactin","DHEA-Sulphate","Progesterone","Cortisol (AM)","Cortisol (PM)","IGF-1","Growth Hormone"]},
+  {name:"Thyroid",markers:["TSH","Free T4","Free T3","Anti-TPO Antibodies","Anti-Thyroglobulin Abs"]},
+  {name:"Vitamins & Minerals",markers:["Vitamin D","Vitamin B12","Serum Folate","Magnesium"]},
+  {name:"Prostate",markers:["PSA"]},
+  {name:"Muscle",markers:["CK"]},
+];
+
+const M_AU={
+  "Haemoglobin":{unit:"g/L",range:"135–180"},"Red Blood Cells":{unit:"×10¹²/L",range:"4.5–6.0"},
+  "Haematocrit / PCV":{unit:"L/L",range:"0.40–0.52"},"Mean Cell Volume":{unit:"fL",range:"80–98"},
+  "Mean Cell Haemoglobin":{unit:"pg",range:"27–35"},"MCHC":{unit:"g/L",range:"310–365"},
+  "Red Cell Distribution Width":{unit:"%",range:"11.0–15.5"},"Platelets":{unit:"×10⁹/L",range:"150–450"},
+  "Mean Platelet Volume":{unit:"fL",range:"7.4–11.0"},"White Blood Cells":{unit:"×10⁹/L",range:"4.0–11.0"},
+  "Neutrophils":{unit:"×10⁹/L",range:"2.0–7.5"},"Lymphocytes":{unit:"×10⁹/L",range:"1.1–4.0"},
+  "Monocytes":{unit:"×10⁹/L",range:"0.2–1.0"},"Eosinophils":{unit:"×10⁹/L",range:"0.04–0.40"},
+  "Basophils":{unit:"×10⁹/L",range:"< 0.21"},"Albumin":{unit:"g/L",range:"35–50"},
+  "Total Protein":{unit:"g/L",range:"60–82"},"Globulin":{unit:"g/L",range:"20–40"},
+  "Total Bilirubin":{unit:"µmol/L",range:"2–20"},"ALT":{unit:"U/L",range:"< 45"},
+  "ALP":{unit:"U/L",range:"30–115"},"GGT":{unit:"U/L",range:"0–70"},
+  "LDH":{unit:"U/L",range:"80–250"},"AST":{unit:"U/L",range:"< 41"},
+  "Urea":{unit:"mmol/L",range:"2.5–8.0"},"Creatinine":{unit:"µmol/L",range:"60–130"},
+  "eGFR":{unit:"mL/min/1.73m²",range:"> 59"},"Uric Acid":{unit:"µmol/L",range:"120–450"},
+  "Sodium":{unit:"mmol/L",range:"137–147"},"Potassium":{unit:"mmol/L",range:"3.5–5.0"},
+  "Calcium":{unit:"mmol/L",range:"2.15–2.60"},"Phosphate":{unit:"mmol/L",range:"0.8–1.5"},
+  "Glucose (fasting)":{unit:"mmol/L",range:"3.0–6.0"},"Insulin":{unit:"mU/L",range:"< 25"},
+  "HbA1c":{unit:"%",range:"< 5.7"},"CRP":{unit:"mg/L",range:"< 6.0"},
+  "Iron":{unit:"µmol/L",range:"10–33"},"Ferritin":{unit:"µg/L",range:"30–320"},
+  "Transferrin Saturation":{unit:"%",range:"16–50"},"TIBC":{unit:"µmol/L",range:"45–70"},
+  "Cholesterol (Total)":{unit:"mmol/L",range:"< 5.5"},"HDL":{unit:"mmol/L",range:"> 1.0"},
+  "LDL":{unit:"mmol/L",range:"< 2.5"},"Triglycerides":{unit:"mmol/L",range:"< 2.0"},
+  "Non-HDL Cholesterol":{unit:"mmol/L",range:"< 3.3"},"LDL/HDL Ratio":{unit:"ratio",range:"< 4.0"},
+  "Testosterone":{unit:"nmol/L",range:"10.0–33.0"},"Free Testosterone":{unit:"nmol/L",range:"0.15–0.70"},
+  "SHBG":{unit:"nmol/L",range:"13–71"},"Free Androgen Index":{unit:"ratio",range:"24–104"},
+  "Oestradiol":{unit:"pmol/L",range:"< 150"},"FSH":{unit:"IU/L",range:"1.5–12.4"},
+  "LH":{unit:"IU/L",range:"1.7–8.6"},"Prolactin":{unit:"mIU/L",range:"< 300"},
+  "DHEA-Sulphate":{unit:"µmol/L",range:"1.5–12.8"},"Progesterone":{unit:"nmol/L",range:"< 3"},
+  "Cortisol (AM)":{unit:"nmol/L",range:"145–619"},"Cortisol (PM)":{unit:"nmol/L",range:"95–462"},
+  "IGF-1":{unit:"nmol/L",range:"14–42"},"Growth Hormone":{unit:"mIU/L",range:"< 19.0"},
+  "TSH":{unit:"mIU/L",range:"0.50–4.00"},"Free T4":{unit:"pmol/L",range:"10–20"},
+  "Free T3":{unit:"pmol/L",range:"2.8–6.8"},"Anti-TPO Antibodies":{unit:"kIU/L",range:"< 34"},
+  "Anti-Thyroglobulin Abs":{unit:"kIU/L",range:"< 115"},
+  "Vitamin D":{unit:"nmol/L",range:"75–200"},"Vitamin B12":{unit:"pmol/L",range:"150–700"},
+  "Serum Folate":{unit:"nmol/L",range:"8.8–60.8"},"Magnesium":{unit:"mmol/L",range:"0.7–1.1"},
+  "PSA":{unit:"ng/mL",range:"< 1.6"},"CK":{unit:"U/L",range:"39–380"}
+};
+function cloneBlood(o){return JSON.parse(JSON.stringify(o));}
+const F_AU=cloneBlood(M_AU);
+F_AU["Haemoglobin"]={unit:"g/L",range:"115–165"};F_AU["Red Blood Cells"]={unit:"×10¹²/L",range:"3.8–5.2"};
+F_AU["Haematocrit / PCV"]={unit:"L/L",range:"0.35–0.47"};F_AU["Testosterone"]={unit:"nmol/L",range:"0.5–3.0"};
+F_AU["Free Testosterone"]={unit:"nmol/L",range:"0.003–0.026"};F_AU["SHBG"]={unit:"nmol/L",range:"20–130"};
+F_AU["Free Androgen Index"]={unit:"ratio",range:"1.5–9.0"};F_AU["Oestradiol"]={unit:"pmol/L",range:"46–607"};
+F_AU["FSH"]={unit:"IU/L",range:"2.8–11.3"};F_AU["LH"]={unit:"IU/L",range:"1.1–11.6"};
+F_AU["Prolactin"]={unit:"mIU/L",range:"< 700"};F_AU["Ferritin"]={unit:"µg/L",range:"10–200"};
+F_AU["CK"]={unit:"U/L",range:"20–200"};F_AU["PSA"]={unit:"ng/mL",range:"N/A"};
+F_AU["DHEA-Sulphate"]={unit:"µmol/L",range:"0.44–13.4"};
+const M_UK=cloneBlood(M_AU);
+M_UK["Vitamin D"]={unit:"nmol/L",range:"50–200"};M_UK["Cholesterol (Total)"]={unit:"mmol/L",range:"< 5.0"};
+M_UK["LDL"]={unit:"mmol/L",range:"< 3.0"};M_UK["Testosterone"]={unit:"nmol/L",range:"8.64–29.0"};
+M_UK["TSH"]={unit:"mIU/L",range:"0.27–4.20"};M_UK["Prolactin"]={unit:"mIU/L",range:"86–324"};
+const F_UK=cloneBlood(F_AU);
+F_UK["Vitamin D"]={unit:"nmol/L",range:"50–200"};F_UK["Cholesterol (Total)"]={unit:"mmol/L",range:"< 5.0"};
+F_UK["LDL"]={unit:"mmol/L",range:"< 3.0"};F_UK["TSH"]={unit:"mIU/L",range:"0.27–4.20"};
+const BLOOD_RANGES=[M_AU,F_AU,M_UK,F_UK];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ECHO SECTIONS & RANGES
+// ══════════════════════════════════════════════════════════════════════════════
+const ECHO_SECTIONS=[
+  {name:"Patient & Study Info",markers:["Referring Physician","Sonographer","Indication","Heart Rhythm","Heart Rate","Blood Pressure","Height","Weight","BSA","BMI","Image Quality","Report Status","Cardiologist","Comments"]},
+  {name:"LV Dimensions",markers:["LVIDd","LVIDs","IVSd","LVPWd","RWT","LV Mass (linear)","LVMI / LV Mass Index","MAPSE Lateral"]},
+  {name:"LV Systolic Function",markers:["EF Biplane (Simpson)","EF A4C","LV Fractional Shortening (FS)","Avg GLS","CO (Cardiac Output)","CI (Cardiac Index)"]},
+  {name:"LV Volumes A4C",markers:["LVEDV A4C","LVESV A4C","LVEDVI A4C","LVESVI A4C"]},
+  {name:"LV Volumes A2C",markers:["LVEDV A2C","LVESV A2C","LVEDVI A2C","LVESVI A2C"]},
+  {name:"Diastology",markers:["E Velocity","A Velocity","E/A Ratio","MV Deceleration Time","E' Septal Velocity","E' Lateral Velocity","S' Lateral Velocity","E/E' Septal","E/E' Lateral","E/E' Average","e' Average Velocity"]},
+  {name:"Left Atrium",markers:["LA Area","LA Volume A4C","LA Volume A4C Index","LA Vol Index (biplane)"]},
+  {name:"Aortic Valve",markers:["AV Vmax","AV Peak Gradient","AV Mean Gradient","AV VTI","AVA (Cont VTI)","AVA (Cont VTI) Index","AVA (Cont Vmax)","AVA (Cont Vmax) Index","AV Dimensionless Index","AR PHT"]},
+  {name:"LVOT",markers:["LVOT Diameter","LVOT Vmax","LVOT VTI","LVOT Peak Gradient","LVOT Mean Gradient","LVOT Stroke Volume","LVOT SV Index","LVOT Cardiac Output","LVOT Cardiac Index"]},
+  {name:"Aorta",markers:["Sinus of Valsalva","Sinus of Valsalva Index","Sinotubular Junction","Sinotubular Junction Index","Ascending Aorta","Ascending Aorta Index","LVOT Diam (PLAX)"]},
+  {name:"Mitral Valve",markers:["MV Mean Gradient","MV PHT","MVA (PHT)","Mitral E Point Velocity","Mitral A Point Velocity","Mitral E/A Ratio","Mitral E Peak Gradient"]},
+  {name:"Tricuspid Valve",markers:["TR Vmax","TR Peak Gradient","S' Tricuspid / FAC"]},
+  {name:"Pulmonary Valve",markers:["PV Vmax","PV Peak Gradient","PV Acceleration Time","Qp:Qs"]},
+  {name:"Right Ventricle",markers:["RVd / RVD1","RVD2 (Mid Diameter)","RVD3 (Length)","RVOT PLAX","RV S' Velocity","TAPSE","RV Diastolic Area","RV Systolic Area","RV FAC"]},
+  {name:"Right Atrium",markers:["RA Area","RA Area A4C Index"]},
+  {name:"IVC & Right Heart Pressures",markers:["IVC Diameter (expiration)","IVC Inspiration","IVC % Change","RAP","RVSP / PASP"]},
+  {name:"Pericardium & Pleura",markers:["Pericardial Effusion","Pleural Effusion","IAS/IVS"]},
+  {name:"Narrative Findings",markers:["Left Ventricle — Narrative","Right Ventricle — Narrative","Left Atrium — Narrative","Right Atrium — Narrative","Aortic Valve — Narrative","Mitral Valve — Narrative","Tricuspid Valve — Narrative","Pulmonary Valve — Narrative","Aorta — Narrative","Pericardium — Narrative","IVC — Narrative"]},
+  {name:"Conclusions",markers:["Overall LV Function","Diastolic Function Grade","LV Hypertrophy","Valvular Disease Summary","Pulmonary Hypertension","Overall Conclusion","Recommendations"]},
+];
+
+const ECHO_M={
+  "Heart Rate":{unit:"bpm",range:"50–100"},"BSA":{unit:"m²",range:"1.5–2.5"},
+  "LVIDd":{unit:"cm",range:"3.5–5.5"},"LVIDs":{unit:"cm",range:"2.3–3.9"},
+  "IVSd":{unit:"cm",range:"0.6–1.1"},"LVPWd":{unit:"cm",range:"0.6–1.1"},
+  "RWT":{unit:"ratio",range:"0.22–0.42"},"LVMI / LV Mass Index":{unit:"g/m²",range:"< 115"},
+  "MAPSE Lateral":{unit:"cm",range:"> 1.0"},
+  "EF Biplane (Simpson)":{unit:"%",range:"55–75"},"EF A4C":{unit:"%",range:"55–75"},
+  "LV Fractional Shortening (FS)":{unit:"%",range:"28–50"},
+  "Avg GLS":{unit:"%",range:"-20 – -16"},"CO (Cardiac Output)":{unit:"L/min",range:"4.0–8.0"},
+  "CI (Cardiac Index)":{unit:"L/min/m²",range:"2.5–4.0"},
+  "LVEDV A4C":{unit:"mL",range:"< 200"},"LVESV A4C":{unit:"mL",range:"< 80"},
+  "LVEDVI A4C":{unit:"mL/m²",range:"< 75"},"LVESVI A4C":{unit:"mL/m²",range:"< 32"},
+  "LVEDV A2C":{unit:"mL",range:"< 200"},"LVESV A2C":{unit:"mL",range:"< 80"},
+  "LVEDVI A2C":{unit:"mL/m²",range:"< 75"},"LVESVI A2C":{unit:"mL/m²",range:"< 32"},
+  "E Velocity":{unit:"m/s",range:"0.6–1.3"},"A Velocity":{unit:"m/s",range:"0.5–0.9"},
+  "E/A Ratio":{unit:"ratio",range:"0.8–1.5"},"MV Deceleration Time":{unit:"ms",range:"160–230"},
+  "E' Septal Velocity":{unit:"m/s",range:"0.07–0.15"},"E' Lateral Velocity":{unit:"m/s",range:"0.10–0.20"},
+  "S' Lateral Velocity":{unit:"m/s",range:"0.06–0.15"},
+  "E/E' Septal":{unit:"ratio",range:"< 15"},"E/E' Lateral":{unit:"ratio",range:"< 13"},
+  "E/E' Average":{unit:"ratio",range:"< 14"},"e' Average Velocity":{unit:"cm/s",range:"8–15"},
+  "LA Area":{unit:"cm²",range:"< 20"},"LA Volume A4C":{unit:"mL",range:"< 70"},
+  "LA Volume A4C Index":{unit:"mL/m²",range:"< 34"},"LA Vol Index (biplane)":{unit:"mL/m²",range:"< 34"},
+  "AV Vmax":{unit:"m/s",range:"< 2.0"},"AV Peak Gradient":{unit:"mmHg",range:"< 20"},
+  "AV Mean Gradient":{unit:"mmHg",range:"< 10"},"AVA (Cont VTI)":{unit:"cm²",range:"> 1.5"},
+  "AVA (Cont VTI) Index":{unit:"cm²/m²",range:"> 1.0"},"AVA (Cont Vmax)":{unit:"cm²",range:"> 1.5"},
+  "AVA (Cont Vmax) Index":{unit:"cm²/m²",range:"> 1.0"},
+  "AV Dimensionless Index":{unit:"ratio",range:"> 0.25"},"AR PHT":{unit:"ms",range:"> 250"},
+  "LVOT Diameter":{unit:"cm",range:"1.8–2.4"},"LVOT Vmax":{unit:"m/s",range:"< 1.5"},
+  "LVOT VTI":{unit:"cm",range:"18–30"},"LVOT Peak Gradient":{unit:"mmHg",range:"< 10"},
+  "LVOT Mean Gradient":{unit:"mmHg",range:"< 5"},"LVOT Stroke Volume":{unit:"mL",range:"60–100"},
+  "LVOT SV Index":{unit:"mL/m²",range:"35–75"},"LVOT Cardiac Output":{unit:"L/min",range:"4.0–8.0"},
+  "LVOT Cardiac Index":{unit:"L/min/m²",range:"2.5–4.0"},
+  "Sinus of Valsalva":{unit:"cm",range:"2.1–3.8"},"Sinus of Valsalva Index":{unit:"cm/m",range:"< 2.1"},
+  "Sinotubular Junction":{unit:"cm",range:"2.0–3.5"},"Sinotubular Junction Index":{unit:"cm/m",range:"< 1.8"},
+  "Ascending Aorta":{unit:"cm",range:"2.0–3.8"},"Ascending Aorta Index":{unit:"cm/m",range:"< 2.1"},
+  "LVOT Diam (PLAX)":{unit:"cm",range:"1.8–2.4"},
+  "MV Mean Gradient":{unit:"mmHg",range:"< 5"},"MV PHT":{unit:"ms",range:"< 220"},
+  "MVA (PHT)":{unit:"cm²",range:"> 1.5"},"Mitral E Point Velocity":{unit:"m/s",range:"0.6–1.3"},
+  "Mitral A Point Velocity":{unit:"m/s",range:"0.4–0.9"},"Mitral E/A Ratio":{unit:"ratio",range:"0.8–1.5"},
+  "Mitral E Peak Gradient":{unit:"mmHg",range:"< 5"},
+  "TR Vmax":{unit:"m/s",range:"< 2.8"},"TR Peak Gradient":{unit:"mmHg",range:"< 31"},
+  "S' Tricuspid / FAC":{unit:"ratio",range:"> 0.35"},
+  "PV Vmax":{unit:"m/s",range:"< 1.5"},"PV Peak Gradient":{unit:"mmHg",range:"< 10"},
+  "PV Acceleration Time":{unit:"ms",range:"> 100"},"Qp:Qs":{unit:"ratio",range:"0.9–1.1"},
+  "RVd / RVD1":{unit:"cm",range:"2.5–4.2"},"RVD2 (Mid Diameter)":{unit:"cm",range:"< 3.5"},
+  "RVD3 (Length)":{unit:"cm",range:"> 7.1"},"RVOT PLAX":{unit:"cm",range:"2.5–3.5"},
+  "RV S' Velocity":{unit:"m/s",range:"0.09–0.19"},"TAPSE":{unit:"cm",range:"> 1.7"},
+  "RV Diastolic Area":{unit:"cm²",range:"< 28"},"RV Systolic Area":{unit:"cm²",range:"< 16"},
+  "RV FAC":{unit:"ratio",range:"> 0.35"},
+  "RA Area":{unit:"cm²",range:"< 18"},"RA Area A4C Index":{unit:"cm²/m²",range:"< 8.0"},
+  "IVC Diameter (expiration)":{unit:"cm",range:"1.2–2.1"},"IVC Inspiration":{unit:"cm",range:"< 0.7"},
+  "IVC % Change":{unit:"%",range:"> 50"},"RAP":{unit:"mmHg",range:"3–10"},
+  "RVSP / PASP":{unit:"mmHg",range:"< 35"},
+};
+function cloneEcho(o){return JSON.parse(JSON.stringify(o));}
+const ECHO_F=cloneEcho(ECHO_M);
+ECHO_F["LVMI / LV Mass Index"]={unit:"g/m²",range:"< 95"};
+
+const ECHO_RANGES=[ECHO_M, ECHO_F];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════════
+const extractedData={blood:null, echo:null};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FILE HANDLING
+// ══════════════════════════════════════════════════════════════════════════════
+async function handleFile(type, e){
+  const file=e.target.files[0]; if(!file) return;
+  document.getElementById(type+'-upload-title').textContent=file.name;
+  showStatus(type,'Reading PDF…',false);
+  try{
+    const text=await extractPDFText(file);
+    showStatus(type,'Analysing with AI…',false);
+    await callClaude(type,text);
+    hideStatus(type);
+  }catch(err){showStatus(type,'Error: '+err.message,true);}
+}
+
+async function extractPDFText(file){
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  let text='';
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    text+=content.items.map(s=>s.str).join(' ')+'\n';
+  }
+  return text;
+}
+
+function showStatus(type,msg,isErr){
+  const bar=document.getElementById(type+'-status');
+  bar.style.display='flex'; bar.className='status-bar'+(isErr?' error':'');
+  document.getElementById(type+'-status-text').innerHTML=msg;
+  document.getElementById(type+'-spinner').style.display=isErr?'none':'block';
+}
+function hideStatus(type){document.getElementById(type+'-status').style.display='none';}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CLAUDE API CALLS
+// ══════════════════════════════════════════════════════════════════════════════
+async function callClaude(type, pdfText){
+  const prompt = type==='blood' ? buildBloodPrompt(pdfText) : buildEchoPrompt(pdfText);
+  const response=await fetch('https://axis-proxy.dean-6d0.workers.dev',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:4000,messages:[{role:'user',content:prompt}]})
+  });
+  const data=await response.json();
+  if(data.error) throw new Error(data.error.message);
+  const raw=data.content.map(c=>c.text||'').join('');
+  const clean=raw.replace(/```json|```/g,'').trim();
+  const parsed=JSON.parse(clean);
+  let mk = parsed.markers||{};
+  // Safety net: for echo numeric params, strip any trailing unit text the model may leave.
+  if(type==='echo'){
+    const TEXT_FIELDS = new Set([
+      'Referring Physician','Sonographer','Indication','Heart Rhythm','Image Quality',
+      'Report Status','Cardiologist','Comments','IAS/IVS','Pericardial Effusion','Pleural Effusion',
+      'Overall LV Function','Diastolic Function Grade','LV Hypertrophy','Valvular Disease Summary',
+      'Pulmonary Hypertension','Overall Conclusion','Recommendations'
+    ]);
+    for(const k in mk){
+      const v = mk[k];
+      if(typeof v==='string' && !TEXT_FIELDS.has(k) && !k.includes('Narrative')){
+        // keep blood pressure style 125/55, otherwise pull the leading number
+        if(/^\s*-?\d+(\.\d+)?\s*\/\s*\d+(\.\d+)?/.test(v)){
+          mk[k] = v.replace(/[^0-9.\/]/g,'').trim();
+        } else {
+          const num = v.match(/-?\d+(\.\d+)?/);
+          if(num) mk[k] = num[0];
+        }
+      }
+    }
+  }
+  extractedData[type]=mk;
+  const meta=document.getElementById(type+'-meta');
+  if(parsed.patient){meta.style.display='block';meta.innerHTML='<strong>Patient:</strong> '+parsed.patient;}
+  document.getElementById(type+'-copy-btn').disabled=false;
+  renderTable(type);
+}
+
+function buildBloodPrompt(pdfText){
+  const markers=BLOOD_SECTIONS.flatMap(s=>s.markers).join(', ');
+  return `Extract ALL blood test results from this pathology PDF. The report may be MULTIPLE PAGES with many sections (haematology, biochemistry, hormones, lipids, iron, thyroid etc). Extract every marker you find across ALL pages. Translate to English if needed. Convert to Australian standard units.
+Return ONLY valid JSON, no markdown:
+{"patient":"Name, Sex, Age, Test date","markers":{"MARKER_NAME":"value_as_string"}}
+Use EXACTLY these marker names: ${markers}
+IMPORTANT:
+- Some reports show CUMULATIVE results with multiple date columns side by side. Always use the MOST RECENT (rightmost / latest date) value.
+- Scan the ENTIRE document including later pages — haematology/FBC and hormone sections are often at the end.
+- Prolactin, Progesterone, FSH, LH are hormones — capture them.
+Key conversions: Free Testosterone pmol/L→nmol/L (÷1000), Uric Acid mmol/L→µmol/L (×1000), HbA1c mmol/mol→% ((x÷10.929)+2.15), Haematocrit %→L/L (÷100).
+Only include markers present in the PDF.
+PDF: ${pdfText.substring(0,30000)}`;
+}
+
+function buildEchoPrompt(pdfText){
+  const markers=ECHO_SECTIONS.flatMap(s=>s.markers).join(', ');
+  return `Extract echocardiogram measurements from this echo report PDF. Translate to English if needed.
+Return ONLY valid JSON, no markdown:
+{"patient":"Name, Sex, Age, Study date","markers":{"PARAMETER_NAME":"value_as_string"}}
+Use EXACTLY these parameter names where applicable: ${markers}
+CRITICAL — NUMBER-ONLY VALUES:
+- For NUMERIC measurements, return ONLY the number with NO unit text. The sheet already has a separate unit column.
+  Examples: "5.6 cm" must be returned as "5.6"; "58 %" as "58"; "80 bpm" as "80"; "145.6 g/m²" as "145.6"; "7.9 l/min" as "7.9"; "0.13 m/s" as "0.13"; "125 / 55 mmHg" as "125/55".
+- Strip ALL units (cm, %, bpm, ml, g, g/m², m/s, mmHg, ms, l/min, cm², ml/m² etc.) from numeric values.
+- For genuine TEXT fields ONLY (Referring Physician, Sonographer, Indication, Heart Rhythm, Image Quality, Report Status, Cardiologist, Comments, and all "— Narrative" and Conclusions fields), return the text as-is.
+- For Blood Pressure return as "125/55" (number/number, no mmHg).
+Only include parameters actually present in the report.
+PDF: ${pdfText.substring(0,30000)}`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RENDER TABLE
+// ══════════════════════════════════════════════════════════════════════════════
+function parseRange(r){
+  if(!r) return null;
+  const s=r.replace(/[^\d.\-<>–]/g,' ').trim();
+  if(s.startsWith('<')) return {type:'max',max:parseFloat(s.slice(1))};
+  if(s.startsWith('>')) return {type:'min',min:parseFloat(s.slice(1))};
+  const parts=s.split(/[\s\u2013\-]+/).map(Number).filter(n=>!isNaN(n));
+  if(parts.length===2) return {type:'range',min:parts[0],max:parts[1]};
+  return null;
+}
+function flag(val,rangeStr){
+  const v=parseFloat(val); if(isNaN(v)||!rangeStr) return 'ok';
+  const r=parseRange(rangeStr); if(!r) return 'ok';
+  if(r.type==='max'&&v>r.max) return 'high';
+  if(r.type==='min'&&v<r.min) return 'low';
+  if(r.type==='range'){if(v>r.max) return 'high'; if(v<r.min) return 'low';}
+  return 'ok';
+}
+
+function renderTable(type){
+  const sections=type==='blood'?BLOOD_SECTIONS:ECHO_SECTIONS;
+  const ranges=(type==='blood'?BLOOD_RANGES:ECHO_RANGES)[currentTab[type]];
+  const data=extractedData[type];
+  let html='';
+  for(const section of sections){
+    html+=`<tr class="section-row"><td colspan="4">${section.name}</td></tr>`;
+    for(const marker of section.markers){
+      const ref=ranges[marker]||{};
+      const val=data[marker];
+      let valCell;
+      if(val!==undefined&&val!==null&&val!==''){
+        const f=flag(val,ref.range);
+        if(f==='high') valCell=`<span class="val-high">${val} ▲</span>`;
+        else if(f==='low') valCell=`<span class="val-low">${val} ▼</span>`;
+        else valCell=`<span class="val-ok">${val}</span>`;
+      } else {
+        valCell=`<span class="val-na">—</span>`;
+      }
+      html+=`<tr><td class="marker-name">${marker}</td><td>${valCell}</td><td class="unit-cell">${ref.unit||''}</td><td class="range-cell">${ref.range||''}</td></tr>`;
+    }
+  }
+  document.getElementById(type+'-table-body').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COPY — includes blank row for each section header to match sheet row order
+// ══════════════════════════════════════════════════════════════════════════════
+function copyData(type){
+  const sections=type==='blood'?BLOOD_SECTIONS:ECHO_SECTIONS;
+  const values=[];
+  for(const section of sections){
+    values.push('–'); // section header placeholder row
+    for(const marker of section.markers){
+      const val=extractedData[type]?(extractedData[type][marker]||''):'';
+      values.push(val);
+    }
+  }
+  navigator.clipboard.writeText(values.join('\n')).then(()=>{
+    const btn=document.getElementById(type+'-copy-btn');
+    btn.textContent='✓ Copied!';
+    setTimeout(()=>{btn.innerHTML='📋 Copy column for sheet';},2500);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DRAG & DROP — both upload zones
+// ══════════════════════════════════════════════════════════════════════════════
+['blood','echo'].forEach(type=>{
+  const dz=document.getElementById(type+'-dropzone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();dz.classList.remove('drag');
+    const file=e.dataTransfer.files[0];
+    if(file&&file.type==='application/pdf'){
+      handleFile(type,{target:{files:[file]}});
+    }
+  });
+});
+</script>
+</body>
+</html>
